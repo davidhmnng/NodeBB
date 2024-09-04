@@ -18,7 +18,6 @@ module.exports = {
 
 function processTids(count, tids, next) {
 	winston.verbose(`upgraded ${count} topics`);
-	//count += tids.length;
 	async.each(tids, processTid, next);
 }
 
