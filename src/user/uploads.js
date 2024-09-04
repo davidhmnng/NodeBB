@@ -27,6 +27,13 @@ const _validatePath = async (relativePaths) => {
 	}
 };
 
+const _processPids = async (uploadNames) => {
+	const pids = await db.getSortedSetsMembers(uploadNames.map(relativePath => `upload:${md5(relativePath)}:pids`));
+	await Promise.all(pids.map(async (pids, idx) => {
+		await Promise.all(pids.map(async pid => posts.uploads.dissociate(pid, uploadNames[idx])));
+	}));
+};
+
 module.exports = function (User) {
 	User.associateUpload = async (uid, relativePath) => {
 		await _validatePath(relativePath);
@@ -68,11 +75,7 @@ module.exports = function (User) {
 				]);
 			}));
 
-			// Dissociate the upload from pids, if any
-			const pids = await db.getSortedSetsMembers(uploadNames.map(relativePath => `upload:${md5(relativePath)}:pids`));
-			await Promise.all(pids.map(async (pids, idx) => Promise.all(
-				pids.map(async pid => posts.uploads.dissociate(pid, uploadNames[idx]))
-			)));
+			await _processPids(uploadNames);
 		}, { batch: 50 });
 	};
 
